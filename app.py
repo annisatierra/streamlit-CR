@@ -1,6 +1,8 @@
 import streamlit as st
 import joblib
 import pandas as pd
+import pickle
+import catboost
 
 
 # Define the feature engineering function
@@ -14,7 +16,20 @@ def feature_engineering(df):
 
 
 # Load the pipeline
-pipeline = joblib.load("preprocessing_pipeline.pkl")
+pipeline = joblib.load("preprocessing_pipeline (1).pkl")
+
+
+with open('catboost_model.pkl', 'rb') as file:
+    model_data = pickle.load(file)
+
+model = model_data['model']
+optimal_threshold = model_data['optimal_threshold']
+
+# Contoh penggunaan model dan threshold untuk prediksi baru
+def predict_with_threshold(X_new):
+    y_probs = model.predict_proba(X_new)[:, 1]
+    y_pred = (y_probs >= optimal_threshold).astype(int)
+    return y_pred, y_probs
 
 
 # Function to get user input
@@ -30,7 +45,7 @@ def get_user_input():
         ),
         "CHILDREN": st.number_input("Enter Number of Children", min_value=0, step=1),
         "Civil marriage": st.selectbox(
-            "Select Civil Marriage Status", ["Civil marriage", "Separated", "Widow"]
+            "Select Civil Marriage Status", ["Civil marriage", "Separated", "Widow", "Married"]
         ),
         "EDUCATION": st.selectbox(
             "Select Education Level",
@@ -106,19 +121,16 @@ def main():
     # Get user input
     input_df = get_user_input()
 
-    # Preprocess the input data
-    input_processed = pipeline.transform(input_df)
+    if st.button('Predict'):
+        # Preprocess the input data
+        input_processed = pipeline.transform(input_df)
 
-    # Load the model
-    model = joblib.load("CatBoost_final_2.pkl")
+        # Make predictions
+        y_pred, y_probs = predict_with_threshold(input_processed)
 
-    # Make predictions
-    prediction = model.predict(input_processed)
-    prediction_prob = model.predict_proba(input_processed)
-
-    # Display the prediction and probabilities
-    st.write(f"Prediction: {'Positive' if prediction[0] == 1 else 'Negative'}")
-    st.write(f"Prediction Probability: {prediction_prob[0]}")
+        # Display the prediction and probabilities
+        st.write(f"Prediction: {'Positive' if y_pred[0] == 1 else 'Negative'}")
+        st.write(f"Prediction Probability: {y_probs[0]}")
 
 
 if __name__ == "__main__":
