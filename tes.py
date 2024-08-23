@@ -19,11 +19,12 @@ def feature_engineering(df):
 pipeline = joblib.load("preprocessing_pipeline_ulang.pkl")
 
 
-with open('catboost_model.pkl', 'rb') as file:
+with open("catboost_model.pkl", "rb") as file:
     model_data = pickle.load(file)
 
-model = model_data['model']
-optimal_threshold = model_data['optimal_threshold']
+model = model_data["model"]
+optimal_threshold = model_data["optimal_threshold"]
+
 
 # Contoh penggunaan model dan threshold untuk prediksi baru
 def predict_with_threshold(X_new):
@@ -45,7 +46,8 @@ def get_user_input():
         ),
         "CHILDREN": st.number_input("Enter Number of Children", min_value=0, step=1),
         "Civil marriage": st.selectbox(
-            "Select Civil Marriage Status", ["Civil marriage", "Separated", "Widow", "Married"]
+            "Select Civil Marriage Status",
+            ["Civil marriage", "Separated", "Widow", "Married"],
         ),
         "EDUCATION": st.selectbox(
             "Select Education Level",
@@ -63,9 +65,18 @@ def get_user_input():
             "Select Type of Income",
             ["Pensioner", "Commercial associate", "Working", "State servant"],
         ),
-        "Work_Phone": st.selectbox("Select Work Phone Availability", ["0", "1"]),
-        "Phone": st.selectbox("Select Phone Availability", ["0", "1"]),
-        "EMAIL_ID": st.selectbox("Select Email ID Availability", ["0", "1"]),
+        # Updated selectbox for "Work_Phone" to display "Not Available" and "Available"
+        "Work_Phone": st.selectbox(
+            "Select Work Phone Availability", ["Not Available", "Available"]
+        ),
+        # Updated selectbox for "Phone" to display "Not Available" and "Available"
+        "Phone": st.selectbox(
+            "Select Phone Availability", ["Not Available", "Available"]
+        ),
+        # Updated selectbox for "EMAIL_ID" to display "Not Available" and "Available"
+        "EMAIL_ID": st.selectbox(
+            "Select Email ID Availability", ["Not Available", "Available"]
+        ),
         "Marital_status": st.selectbox(
             "Select Marital Status", ["Single", "Married", "Divorced", "Widowed"]
         ),
@@ -105,6 +116,12 @@ def get_user_input():
         ),
     }
 
+    # Mapping for 'Not Available' and 'Available' to 0 and 1
+    availability_mapping = {"Not Available": 0, "Available": 1}
+    user_input["Work_Phone"] = availability_mapping[user_input["Work_Phone"]]
+    user_input["Phone"] = availability_mapping[user_input["Phone"]]
+    user_input["EMAIL_ID"] = availability_mapping[user_input["EMAIL_ID"]]
+
     # Convert to DataFrame and ensure all expected features are present
     input_df = pd.DataFrame(user_input, index=[0])
     for i in range(56):
@@ -121,7 +138,7 @@ def main():
     # Get user input
     input_df = get_user_input()
 
-    if st.button('Predict'):
+    if st.button("Predict"):
         # Preprocess the input data
         input_processed = pipeline.transform(input_df)
 
