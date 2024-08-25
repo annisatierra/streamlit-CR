@@ -3,14 +3,16 @@ import joblib
 import pandas as pd
 import pickle
 import catboost
+from datetime import datetime, date
 
 # Set page configuration
 st.set_page_config(
     page_title="Credit Risk Assessment App",
     page_icon="💳",
     layout="centered",
-    initial_sidebar_state="expanded"
+    initial_sidebar_state="expanded",
 )
+
 
 # Define the feature engineering function
 def feature_engineering(df):
@@ -21,6 +23,7 @@ def feature_engineering(df):
     df["Is_Employed"] = df["Employed_days"] > 0
     return df
 
+
 # Load the pipeline
 pipeline = joblib.load("preprocessing_pipeline_ulang.pkl")
 
@@ -30,26 +33,44 @@ with open("catboost_model.pkl", "rb") as file:
 model = model_data["model"]
 optimal_threshold = model_data["optimal_threshold"]
 
+
 # Contoh penggunaan model dan threshold untuk prediksi baru
 def predict_with_threshold(X_new):
     y_probs = model.predict_proba(X_new)[:, 1]
     y_pred = (y_probs >= optimal_threshold).astype(int)
     return y_pred, y_probs
 
+
 # Function to get user input
 def get_user_input():
     st.sidebar.header("Applicant Information")
-    
+
+    # New section to ask employment status
+    employment_status = st.sidebar.selectbox(
+        "Are you currently employed?", ["Yes", "No"]
+    )
+
+    # Capture input values
+    birth_date = st.sidebar.date_input("Enter Birth Date")
+
+    # Calculate `Birthday_count` in days
+    today = date.today()
+    birthday_count = (today - birth_date).days
+
     user_input = {
-        "Employed_days": st.sidebar.number_input("Enter Employed Days", min_value=0, step=1),
-        "Birthday_count": st.sidebar.number_input("Enter Birthday Count", min_value=0, step=1),
+        "Employed_days": st.sidebar.number_input(
+            "Enter Employed Days", min_value=0, step=1
+        ),
+        "Birthday_count": birthday_count,
         "Annual_income": st.sidebar.number_input(
             "Enter Annual Income", min_value=0.0, step=0.01
         ),
         "Family_Members": st.sidebar.number_input(
             "Enter Number of Family Members", min_value=1, step=1
         ),
-        "CHILDREN": st.sidebar.number_input("Enter Number of Children", min_value=0, step=1),
+        "CHILDREN": st.sidebar.number_input(
+            "Enter Number of Children", min_value=0, step=1
+        ),
         "Civil marriage": st.sidebar.selectbox(
             "Select Civil Marriage Status",
             ["Civil marriage", "Separated", "Widow", "Married"],
@@ -70,15 +91,12 @@ def get_user_input():
             "Select Type of Income",
             ["Pensioner", "Commercial associate", "Working", "State servant"],
         ),
-        # Updated selectbox for "Work_Phone" to display "Not Available" and "Available"
         "Work_Phone": st.sidebar.selectbox(
             "Select Work Phone Availability", ["Not Available", "Available"]
         ),
-        # Updated selectbox for "Phone" to display "Not Available" and "Available"
         "Phone": st.sidebar.selectbox(
             "Select Phone Availability", ["Not Available", "Available"]
         ),
-        # Updated selectbox for "EMAIL_ID" to display "Not Available" and "Available"
         "EMAIL_ID": st.sidebar.selectbox(
             "Select Email ID Availability", ["Not Available", "Available"]
         ),
@@ -127,6 +145,10 @@ def get_user_input():
     user_input["Phone"] = availability_mapping[user_input["Phone"]]
     user_input["EMAIL_ID"] = availability_mapping[user_input["EMAIL_ID"]]
 
+    # Adjust 'Employed_days' based on employment status
+    if employment_status == "No":
+        user_input["Employed_days"] *= -1
+
     # Convert to DataFrame and ensure all expected features are present
     input_df = pd.DataFrame(user_input, index=[0])
     for i in range(56):
@@ -135,16 +157,22 @@ def get_user_input():
 
     return input_df
 
+
 # Main function to run the app
 def main():
     st.title("💳 Credit Risk Assessment App")
-    st.write("""
+    st.write(
+        """
         ### Welcome to the Credit Risk Assessment App!
         This application uses advanced machine learning models to assess the credit risk of an applicant.
         Fill in the applicant's details in the sidebar and click 'Predict' to get the risk assessment.
-    """)
-    
-    st.image("https://cdn.pixabay.com/photo/2019/02/22/12/04/investing-4013413_1280.jpg", use_column_width=True)
+    """
+    )
+
+    st.image(
+        "https://cdn.pixabay.com/photo/2019/02/22/12/04/investing-4013413_1280.jpg",
+        use_column_width=True,
+    )
 
     # Get user input
     input_df = get_user_input()
@@ -158,18 +186,25 @@ def main():
 
         # Display the prediction and probabilities
         st.subheader("Prediction Results")
-        st.write(f"**Credit Decision:** {'Approve Credit' if y_pred[0] == 1 else 'Reject Credit'}")
+        st.write(
+            f"**Credit Decision:** {'Approve Credit' if y_pred[0] == 1 else 'Reject Credit'}"
+        )
         st.write(f"**Prediction Probability:** {y_probs[0]:.2f}")
-        
+
         # Display detailed insights
         if y_pred[0] == 1:
-            st.success("The applicant is likely to be a low-risk customer. Credit approved!")
+            st.success(
+                "The applicant is likely to be a low-risk customer. Credit approved!"
+            )
         else:
-            st.error("The applicant is likely to be a high-risk customer. Credit not approved.")
+            st.error(
+                "The applicant is likely to be a high-risk customer. Credit not approved."
+            )
 
         # Display additional information
         st.sidebar.subheader("Risk Factors Considered")
-        st.sidebar.markdown("""
+        st.sidebar.markdown(
+            """
         - Employment Status
         - Annual Income
         - Family Size
@@ -179,7 +214,9 @@ def main():
         - Housing Type
         - Occupation Type
         - Availability of Work Phone, Personal Phone, and Email ID
-        """)
+        """
+        )
+
 
 if __name__ == "__main__":
     main()
