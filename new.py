@@ -1,8 +1,20 @@
+import subprocess
+import sys
+
+def install_requirements():
+    try:
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", "requirement.txt"])
+    except subprocess.CalledProcessError as e:
+        print(f"Error installing packages: {e}")
+        sys.exit(1)
+
+# Call the function to install packages
+install_requirements()
+
 import streamlit as st
 import joblib
 import pandas as pd
 import pickle
-import catboost
 from datetime import datetime, date
 
 # Set page configuration
