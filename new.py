@@ -47,7 +47,7 @@ def get_user_input():
 
     # New section to ask employment status
     employment_status = st.sidebar.selectbox(
-        "Are you currently employed?", ["Yes", "No"]
+        "Enter Current Employment Status", ["Employed", "Unemployed"]
     )
 
     # Capture input values
