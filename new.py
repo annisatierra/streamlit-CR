@@ -4,6 +4,13 @@ import pandas as pd
 import pickle
 import catboost
 
+# Set page configuration
+st.set_page_config(
+    page_title="Credit Risk Assessment App",
+    page_icon="💳",
+    layout="centered",
+    initial_sidebar_state="expanded"
+)
 
 # Define the feature engineering function
 def feature_engineering(df):
@@ -14,10 +21,8 @@ def feature_engineering(df):
     df["Is_Employed"] = df["Employed_days"] > 0
     return df
 
-
 # Load the pipeline
 pipeline = joblib.load("preprocessing_pipeline_ulang.pkl")
-
 
 with open("catboost_model.pkl", "rb") as file:
     model_data = pickle.load(file)
@@ -25,31 +30,31 @@ with open("catboost_model.pkl", "rb") as file:
 model = model_data["model"]
 optimal_threshold = model_data["optimal_threshold"]
 
-
 # Contoh penggunaan model dan threshold untuk prediksi baru
 def predict_with_threshold(X_new):
     y_probs = model.predict_proba(X_new)[:, 1]
     y_pred = (y_probs >= optimal_threshold).astype(int)
     return y_pred, y_probs
 
-
 # Function to get user input
 def get_user_input():
+    st.sidebar.header("Applicant Information")
+    
     user_input = {
-        "Employed_days": st.number_input("Enter Employed Days", min_value=0, step=1),
-        "Birthday_count": st.number_input("Enter Birthday Count", min_value=0, step=1),
-        "Annual_income": st.number_input(
+        "Employed_days": st.sidebar.number_input("Enter Employed Days", min_value=0, step=1),
+        "Birthday_count": st.sidebar.number_input("Enter Birthday Count", min_value=0, step=1),
+        "Annual_income": st.sidebar.number_input(
             "Enter Annual Income", min_value=0.0, step=0.01
         ),
-        "Family_Members": st.number_input(
+        "Family_Members": st.sidebar.number_input(
             "Enter Number of Family Members", min_value=1, step=1
         ),
-        "CHILDREN": st.number_input("Enter Number of Children", min_value=0, step=1),
-        "Civil marriage": st.selectbox(
+        "CHILDREN": st.sidebar.number_input("Enter Number of Children", min_value=0, step=1),
+        "Civil marriage": st.sidebar.selectbox(
             "Select Civil Marriage Status",
             ["Civil marriage", "Separated", "Widow", "Married"],
         ),
-        "EDUCATION": st.selectbox(
+        "EDUCATION": st.sidebar.selectbox(
             "Select Education Level",
             [
                 "Higher education",
@@ -59,28 +64,28 @@ def get_user_input():
                 "Academic degree",
             ],
         ),
-        "GENDER": st.selectbox("Select Gender", ["F", "M"]),
-        "Car_Owner": st.selectbox("Select Car Ownership", ["Y", "N"]),
-        "Type_Income": st.selectbox(
+        "GENDER": st.sidebar.selectbox("Select Gender", ["F", "M"]),
+        "Car_Owner": st.sidebar.selectbox("Select Car Ownership", ["Y", "N"]),
+        "Type_Income": st.sidebar.selectbox(
             "Select Type of Income",
             ["Pensioner", "Commercial associate", "Working", "State servant"],
         ),
         # Updated selectbox for "Work_Phone" to display "Not Available" and "Available"
-        "Work_Phone": st.selectbox(
+        "Work_Phone": st.sidebar.selectbox(
             "Select Work Phone Availability", ["Not Available", "Available"]
         ),
         # Updated selectbox for "Phone" to display "Not Available" and "Available"
-        "Phone": st.selectbox(
+        "Phone": st.sidebar.selectbox(
             "Select Phone Availability", ["Not Available", "Available"]
         ),
         # Updated selectbox for "EMAIL_ID" to display "Not Available" and "Available"
-        "EMAIL_ID": st.selectbox(
+        "EMAIL_ID": st.sidebar.selectbox(
             "Select Email ID Availability", ["Not Available", "Available"]
         ),
-        "Marital_status": st.selectbox(
+        "Marital_status": st.sidebar.selectbox(
             "Select Marital Status", ["Single", "Married", "Divorced", "Widowed"]
         ),
-        "Housing_type": st.selectbox(
+        "Housing_type": st.sidebar.selectbox(
             "Select Housing Type",
             [
                 "House / apartment",
@@ -91,7 +96,7 @@ def get_user_input():
                 "Office apartment",
             ],
         ),
-        "Type_Occupation": st.selectbox(
+        "Type_Occupation": st.sidebar.selectbox(
             "Select Type of Occupation",
             [
                 "Core staff",
@@ -130,10 +135,16 @@ def get_user_input():
 
     return input_df
 
-
 # Main function to run the app
 def main():
-    st.title("Credit Assesment App")
+    st.title("💳 Credit Risk Assessment App")
+    st.write("""
+        ### Welcome to the Credit Risk Assessment App!
+        This application uses advanced machine learning models to assess the credit risk of an applicant.
+        Fill in the applicant's details in the sidebar and click 'Predict' to get the risk assessment.
+    """)
+    
+    st.image("https://cdn.pixabay.com/photo/2019/02/22/12/04/investing-4013413_1280.jpg", use_column_width=True)
 
     # Get user input
     input_df = get_user_input()
@@ -146,9 +157,29 @@ def main():
         y_pred, y_probs = predict_with_threshold(input_processed)
 
         # Display the prediction and probabilities
-        st.write(f"Prediction: {'Approve Credit' if y_pred[0] == 1 else 'Reject Credit'}")
-        st.write(f"Prediction Probability: {y_probs[0]}")
+        st.subheader("Prediction Results")
+        st.write(f"**Credit Decision:** {'Approve Credit' if y_pred[0] == 1 else 'Reject Credit'}")
+        st.write(f"**Prediction Probability:** {y_probs[0]:.2f}")
+        
+        # Display detailed insights
+        if y_pred[0] == 1:
+            st.success("The applicant is likely to be a low-risk customer. Credit approved!")
+        else:
+            st.error("The applicant is likely to be a high-risk customer. Credit not approved.")
 
+        # Display additional information
+        st.sidebar.subheader("Risk Factors Considered")
+        st.sidebar.markdown("""
+        - Employment Status
+        - Annual Income
+        - Family Size
+        - Number of Children
+        - Marital Status
+        - Education Level
+        - Housing Type
+        - Occupation Type
+        - Availability of Work Phone, Personal Phone, and Email ID
+        """)
 
 if __name__ == "__main__":
     main()
